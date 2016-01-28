@@ -525,7 +525,7 @@ void EdgeBasedGraphFactory::GenerateEdgeExpandedEdges(
                     (edge_is_compressed ? m_compressed_edge_container.GetPositionForID(e1)
                                         : node_v),
                     edge_data1.name_id, turn_instruction, edge_is_compressed,
-                    edge_data2.travel_mode);
+                    edge_data1.travel_mode);
 
                 ++original_edges_counter;
 
@@ -681,7 +681,7 @@ TurnInstruction EdgeBasedGraphFactory::AnalyzeTurn(const NodeID node_u,
         if (1 == m_node_based_graph->GetDirectedOutDegree(node_v))
         {
             // No turn possible.
-            return TurnInstruction::NoTurn;
+            return TurnInstruction::None;
         }
         return TurnInstruction::StayOnRoundAbout;
     }
@@ -708,7 +708,7 @@ TurnInstruction EdgeBasedGraphFactory::AnalyzeTurn(const NodeID node_u,
         //      more complex situations
         if (0 != data1.name_id || m_node_based_graph->GetOutDegree(node_v) <= 2)
         {
-            return TurnInstruction::NoTurn;
+            return TurnInstruction::None;
         }
     }
 

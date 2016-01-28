@@ -26,7 +26,7 @@ struct OriginalEdgeData
 
     OriginalEdgeData()
         : via_node(std::numeric_limits<unsigned>::max()),
-          name_id(std::numeric_limits<unsigned>::max()), turn_instruction(TurnInstruction::NoTurn),
+          name_id(std::numeric_limits<unsigned>::max()), turn_instruction(TurnInstruction::None),
           compressed_geometry(false), travel_mode(TRAVEL_MODE_INACCESSIBLE)
     {
     }
