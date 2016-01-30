@@ -156,18 +156,28 @@ template <typename RTreeT, typename DataFacadeT> class GeospatialQuery
         std::vector<EdgeWeight> forward_weight_vector;
         datafacade.GetUncompressedWeights(transformed.phantom_node.forward_packed_geometry_id, forward_weight_vector);
 
+        std::vector<EdgeWeight> reverse_weight_vector;
+        datafacade.GetUncompressedWeights(transformed.phantom_node.reverse_packed_geometry_id, reverse_weight_vector);
+
+        BOOST_ASSERT(reverse_weight_vector.size() == forward_weight_vector.size());
+
         for (int i = 0; i< transformed.phantom_node.fwd_segment_position; i++) {
             forward_offset += forward_weight_vector[i];
         }
 
-        for (int i = 0; i< forward_weight_vector.size() - transformed.phantom_node.fwd_segment_position - 1; i++) {
-            reverse_offset += forward_weight_vector[forward_weight_vector.size()-i-1];
+        for (int i = 0; i< reverse_weight_vector.size() - transformed.phantom_node.fwd_segment_position - 1; i++) {
+            reverse_offset += reverse_weight_vector[i];
         }
 
         ratio = std::min(1.0, std::max(0.0, ratio));
 
         forward_weight = forward_weight_vector[transformed.phantom_node.fwd_segment_position];
-        reverse_weight = forward_weight_vector[transformed.phantom_node.fwd_segment_position];
+        reverse_weight = reverse_weight_vector[reverse_weight_vector.size() - transformed.phantom_node.fwd_segment_position - 1];
+
+        transformed.phantom_node.forward_weight = forward_weight;
+        transformed.phantom_node.reverse_weight = reverse_weight;
+        transformed.phantom_node.forward_offset = forward_offset;
+        transformed.phantom_node.reverse_offset = reverse_offset;
 
         if (SPECIAL_NODEID != transformed.phantom_node.forward_node_id)
         {
@@ -179,9 +189,6 @@ template <typename RTreeT, typename DataFacadeT> class GeospatialQuery
             transformed.phantom_node.reverse_weight *= 1.0 - ratio;
             reverse_weight *= 1.0 - ratio;
         }
-
-        util::SimpleLogger().Write() << "NEW: f_wt: " << forward_weight << " r_wt: " << reverse_weight << " f_off: " << forward_offset << " r_off " << reverse_offset;
-        util::SimpleLogger().Write() << "OLD: f_wt: " << transformed.phantom_node.forward_weight << " r_wt: " << transformed.phantom_node.reverse_weight << " f_off: " << transformed.phantom_node.forward_offset << " r_off " << transformed.phantom_node.reverse_offset;
 
         return transformed;
     }

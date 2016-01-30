@@ -309,14 +309,12 @@ template <class DataFacadeT, class Derived> class BasicRoutingInterface
                     facade->GetUncompressedWeights(facade->GetGeometryIndexForEdgeID(ed.id),
                                                    weight_vector);
 
-                    unsigned penalty = 0; // facade->GetPenaltyForEdgeID(ed.id);
-
                     int total_weight = std::accumulate(weight_vector.begin(), weight_vector.end(), 0);
 
-                    std::cout << "total weight + penalty: " << (total_weight + penalty) << " vs ed.distance: " << ed.distance;
-                    BOOST_ASSERT(ed.distance == total_weight + penalty);
-
                     BOOST_ASSERT(weight_vector.size() == id_vector.size());
+                    // ed.distance should be total_weight + penalties (turn, stop, etc)
+                    BOOST_ASSERT(ed.distance >= total_weight);
+
                     const std::size_t start_index =
                         (unpacked_path.empty()
                              ? ((start_traversed_in_reverse)
@@ -335,6 +333,9 @@ template <class DataFacadeT, class Derived> class BasicRoutingInterface
                                                    travel_mode);
                     }
                     unpacked_path.back().turn_instruction = turn_instruction;
+                    // Last segment gets the penalty part
+                    int penalty = (ed.distance - total_weight);
+                    unpacked_path.back().segment_duration += (ed.distance - total_weight);
                 }
             }
         }

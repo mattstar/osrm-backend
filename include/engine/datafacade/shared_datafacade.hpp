@@ -68,7 +68,7 @@ template <class EdgeDataT> class SharedDataFacade final : public BaseDataFacade<
     util::ShM<unsigned, true>::vector m_name_begin_indices;
     util::ShM<bool, true>::vector m_edge_is_compressed;
     util::ShM<unsigned, true>::vector m_geometry_indices;
-    util::ShM<unsigned, true>::vector m_geometry_list;
+    util::ShM<extractor::CompressedEdgeContainer::CompressedEdge, true>::vector m_geometry_list;
     util::ShM<bool, true>::vector m_is_core_node;
 
     boost::thread_specific_ptr<std::pair<unsigned, std::shared_ptr<SharedRTree>>> m_static_rtree;
@@ -216,9 +216,10 @@ template <class EdgeDataT> class SharedDataFacade final : public BaseDataFacade<
             data_layout->num_entries[storage::SharedDataLayout::GEOMETRIES_INDEX]);
         m_geometry_indices.swap(geometry_begin_indices);
 
-        auto geometries_list_ptr = data_layout->GetBlockPtr<unsigned>(
-            shared_memory, storage::SharedDataLayout::GEOMETRIES_LIST);
-        typename util::ShM<unsigned, true>::vector geometry_list(
+        auto geometries_list_ptr =
+            data_layout->GetBlockPtr<extractor::CompressedEdgeContainer::CompressedEdge>(
+                    shared_memory, storage::SharedDataLayout::GEOMETRIES_LIST);
+        typename util::ShM<extractor::CompressedEdgeContainer::CompressedEdge, true>::vector geometry_list(
             geometries_list_ptr,
             data_layout->num_entries[storage::SharedDataLayout::GEOMETRIES_LIST]);
         m_geometry_list.swap(geometry_list);
@@ -385,14 +386,18 @@ template <class EdgeDataT> class SharedDataFacade final : public BaseDataFacade<
         const unsigned end = m_geometry_indices.at(id + 1);
 
         result_nodes.clear();
-        result_nodes.insert(result_nodes.begin(), m_geometry_list.begin() + begin,
-                            m_geometry_list.begin() + end);
+        std::for_each(m_geometry_list.begin() + begin, m_geometry_list.begin() + end, [&](const osrm::extractor::CompressedEdgeContainer::CompressedEdge &edge){ result_nodes.emplace_back(edge.node_id); });
     }
 
     virtual void GetUncompressedWeights(const EdgeID id,
                                         std::vector<EdgeWeight> &result_weights) const override final
     {
-        // TODO
+        const unsigned begin = m_geometry_indices.at(id);
+        const unsigned end = m_geometry_indices.at(id + 1);
+
+        result_weights.clear();
+        std::for_each(m_geometry_list.begin() + begin, m_geometry_list.begin() + end, [&](const osrm::extractor::CompressedEdgeContainer::CompressedEdge &edge){ result_weights.emplace_back(edge.weight); });
+
     }
 
     virtual unsigned GetGeometryIndexForEdgeID(const unsigned id) const override final
