@@ -116,8 +116,8 @@ void EdgeBasedGraphFactory::InsertEdgeBasedNode(const NodeID node_u, const NodeI
 
         // reconstruct bidirectional edge with individual weights and put each into the NN index
 
-        std::vector<int> forward_dist_prefix_sum(forward_geometry.size(), 0);
-        std::vector<int> reverse_dist_prefix_sum(reverse_geometry.size(), 0);
+        std::vector<int> forward_offsets(forward_geometry.size(), 0);
+        std::vector<int> reverse_offsets(reverse_geometry.size(), 0);
 
         // quick'n'dirty prefix sum as std::partial_sum needs addtional casts
         // TODO: move to lambda function with C++11
@@ -125,8 +125,8 @@ void EdgeBasedGraphFactory::InsertEdgeBasedNode(const NodeID node_u, const NodeI
 
         for (const auto i : util::irange(0u, geometry_size))
         {
-            forward_dist_prefix_sum[i] = temp_sum;
-            temp_sum += forward_geometry[i].second;
+            forward_offsets[i] = temp_sum;
+            temp_sum += forward_geometry[i].weight;
 
             BOOST_ASSERT(forward_data.distance >= temp_sum);
         }
@@ -134,8 +134,8 @@ void EdgeBasedGraphFactory::InsertEdgeBasedNode(const NodeID node_u, const NodeI
         temp_sum = 0;
         for (const auto i : util::irange(0u, geometry_size))
         {
-            temp_sum += reverse_geometry[reverse_geometry.size() - 1 - i].second;
-            reverse_dist_prefix_sum[i] = reverse_data.distance - temp_sum;
+            temp_sum += reverse_geometry[reverse_geometry.size() - 1 - i].weight;
+            reverse_offsets[i] = reverse_data.distance - temp_sum;
             // BOOST_ASSERT(reverse_data.distance >= temp_sum);
         }
 
@@ -145,16 +145,17 @@ void EdgeBasedGraphFactory::InsertEdgeBasedNode(const NodeID node_u, const NodeI
         for (const auto i : util::irange(0u, geometry_size))
         {
             BOOST_ASSERT(current_edge_source_coordinate_id ==
-                         reverse_geometry[geometry_size - 1 - i].first);
-            const NodeID current_edge_target_coordinate_id = forward_geometry[i].first;
+                         reverse_geometry[geometry_size - 1 - i].node_id);
+            const NodeID current_edge_target_coordinate_id = forward_geometry[i].node_id;
             BOOST_ASSERT(current_edge_target_coordinate_id != current_edge_source_coordinate_id);
 
             // build edges
             m_edge_based_node_list.emplace_back(
                 forward_data.edge_id, reverse_data.edge_id, current_edge_source_coordinate_id,
-                current_edge_target_coordinate_id, forward_data.name_id, forward_geometry[i].second,
-                reverse_geometry[geometry_size - 1 - i].second, forward_dist_prefix_sum[i],
-                reverse_dist_prefix_sum[i], m_compressed_edge_container.GetPositionForID(edge_id_1),
+                current_edge_target_coordinate_id, forward_data.name_id, forward_geometry[i].weight,
+                reverse_geometry[geometry_size - 1 - i].weight, forward_offsets[i],
+                reverse_offsets[i], m_compressed_edge_container.GetPositionForID(edge_id_1),
+                m_compressed_edge_container.GetPositionForID(edge_id_2),
                 false, INVALID_COMPONENTID, i, forward_data.travel_mode, reverse_data.travel_mode);
             m_edge_based_node_is_startpoint.push_back(forward_data.startpoint ||
                                                       reverse_data.startpoint);
@@ -199,7 +200,7 @@ void EdgeBasedGraphFactory::InsertEdgeBasedNode(const NodeID node_u, const NodeI
 
         m_edge_based_node_list.emplace_back(
             forward_data.edge_id, reverse_data.edge_id, node_u, node_v, forward_data.name_id,
-            forward_data.distance, reverse_data.distance, 0, 0, SPECIAL_EDGEID, false,
+            forward_data.distance, reverse_data.distance, 0, 0, SPECIAL_EDGEID, SPECIAL_EDGEID, false,
             INVALID_COMPONENTID, 0, forward_data.travel_mode, reverse_data.travel_mode);
         m_edge_based_node_is_startpoint.push_back(forward_data.startpoint ||
                                                   reverse_data.startpoint);
@@ -576,7 +577,7 @@ void EdgeBasedGraphFactory::GenerateEdgeExpandedEdges(
                         for (auto target_node : node_based_edges)
                         {
                             const QueryNode &from = m_node_info_list[previous];
-                            const QueryNode &to = m_node_info_list[target_node.first];
+                            const QueryNode &to = m_node_info_list[target_node.node_id];
                             const double segment_length =
                                 util::coordinate_calculation::greatCircleDistance(
                                     from.lat, from.lon, to.lat, to.lon);
@@ -586,9 +587,9 @@ void EdgeBasedGraphFactory::GenerateEdgeExpandedEdges(
                             edge_segment_file.write(reinterpret_cast<const char *>(&segment_length),
                                                     sizeof(segment_length));
                             edge_segment_file.write(
-                                reinterpret_cast<const char *>(&target_node.second),
-                                sizeof(target_node.second));
-                            previous = target_node.first;
+                                reinterpret_cast<const char *>(&target_node.weight),
+                                sizeof(target_node.weight));
+                            previous = target_node.node_id;
                         }
                     }
                     else

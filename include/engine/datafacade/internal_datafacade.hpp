@@ -15,6 +15,7 @@
 #include "util/range_table.hpp"
 #include "util/graph_loader.hpp"
 #include "util/simple_logger.hpp"
+#include "extractor/compressed_edge_container.hpp"
 
 #include "osrm/coordinate.hpp"
 
@@ -39,7 +40,7 @@ template <class EdgeDataT> class InternalDataFacade final : public BaseDataFacad
     using RTreeLeaf = typename super::RTreeLeaf;
     using InternalRTree =
         util::StaticRTree<RTreeLeaf, util::ShM<util::FixedPointCoordinate, false>::vector, false>;
-    using InternalGeospatialQuery = GeospatialQuery<InternalRTree>;
+    using InternalGeospatialQuery = GeospatialQuery<InternalRTree, BaseDataFacade<EdgeDataT>>;
 
     InternalDataFacade() {}
 
@@ -56,8 +57,9 @@ template <class EdgeDataT> class InternalDataFacade final : public BaseDataFacad
     util::ShM<char, false>::vector m_names_char_list;
     util::ShM<bool, false>::vector m_edge_is_compressed;
     util::ShM<unsigned, false>::vector m_geometry_indices;
-    util::ShM<unsigned, false>::vector m_geometry_list;
+    util::ShM<extractor::CompressedEdgeContainer::CompressedEdge, false>::vector m_geometry_list;
     util::ShM<bool, false>::vector m_is_core_node;
+    util::ShM<unsigned, false>::vector m_segment_weights;
 
     boost::thread_specific_ptr<InternalRTree> m_static_rtree;
     boost::thread_specific_ptr<InternalGeospatialQuery> m_geospatial_query;
@@ -204,7 +206,7 @@ template <class EdgeDataT> class InternalDataFacade final : public BaseDataFacad
         if (number_of_compressed_geometries > 0)
         {
             geometry_stream.read((char *)&(m_geometry_list[0]),
-                                 number_of_compressed_geometries * sizeof(unsigned));
+                                 number_of_compressed_geometries * sizeof(extractor::CompressedEdgeContainer::CompressedEdge));
         }
         geometry_stream.close();
     }
@@ -214,7 +216,7 @@ template <class EdgeDataT> class InternalDataFacade final : public BaseDataFacad
         BOOST_ASSERT_MSG(!m_coordinate_list->empty(), "coordinates must be loaded before r-tree");
 
         m_static_rtree.reset(new InternalRTree(ram_index_path, file_index_path, m_coordinate_list));
-        m_geospatial_query.reset(new InternalGeospatialQuery(*m_static_rtree, m_coordinate_list));
+        m_geospatial_query.reset(new InternalGeospatialQuery(*m_static_rtree, m_coordinate_list, *this));
     }
 
     void LoadStreetNames(const boost::filesystem::path &names_file)
@@ -434,15 +436,25 @@ template <class EdgeDataT> class InternalDataFacade final : public BaseDataFacad
         }
     }
 
-    virtual void GetUncompressedGeometry(const unsigned id,
-                                         std::vector<unsigned> &result_nodes) const override final
+    virtual void GetUncompressedGeometry(const EdgeID id,
+                                         std::vector<NodeID> &result_nodes) const override final
     {
         const unsigned begin = m_geometry_indices.at(id);
         const unsigned end = m_geometry_indices.at(id + 1);
 
         result_nodes.clear();
-        result_nodes.insert(result_nodes.begin(), m_geometry_list.begin() + begin,
-                            m_geometry_list.begin() + end);
+        std::for_each(m_geometry_list.begin() + begin, m_geometry_list.begin() + end, [&](const osrm::extractor::CompressedEdgeContainer::CompressedEdge &edge){ result_nodes.emplace_back(edge.node_id); });
+    }
+
+    virtual void GetUncompressedWeights(const EdgeID id,
+                                        std::vector<EdgeWeight> &result_weights) const override final
+    {
+        const unsigned begin = m_geometry_indices.at(id);
+        const unsigned end = m_geometry_indices.at(id + 1);
+
+        result_weights.clear();
+        std::for_each(m_geometry_list.begin() + begin, m_geometry_list.begin() + end, [&](const osrm::extractor::CompressedEdgeContainer::CompressedEdge &edge){ result_weights.emplace_back(edge.weight); });
+
     }
 
     std::string GetTimestamp() const override final { return m_timestamp; }

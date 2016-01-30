@@ -98,6 +98,7 @@ SegmentList<DataFacadeT>::SegmentList(const InternalRouteResult &raw_route,
         for (std::size_t raw_index = 0; raw_index < raw_route.segment_end_coordinates.size();
              ++raw_index)
         {
+            util::SimpleLogger().Write() << "Adding segment";
             AddLeg(raw_route.unpacked_path_segments[raw_index],
                    raw_route.segment_end_coordinates[raw_index].target_phantom,
                    raw_route.target_traversed_in_reverse[raw_index],
@@ -153,8 +154,10 @@ void SegmentList<DataFacadeT>::AddLeg(const std::vector<PathData> &leg_data,
                                       const bool is_via_leg,
                                       const DataFacade *facade)
 {
+    util::SimpleLogger().Write() << "Adding leg";
     for (const PathData &path_data : leg_data)
     {
+        util::SimpleLogger().Write() << "Adding coordinate of leg has weight " << path_data.node;
         AppendSegment(facade->GetCoordinateOfNode(path_data.node), path_data);
     }
 

@@ -17,6 +17,7 @@
 #include <utility>
 #include <vector>
 #include <stack>
+#include <numeric>
 
 namespace osrm
 {
@@ -300,10 +301,22 @@ template <class DataFacadeT, class Derived> class BasicRoutingInterface
                 }
                 else
                 {
-                    std::vector<unsigned> id_vector;
+                    std::vector<NodeID> id_vector;
                     facade->GetUncompressedGeometry(facade->GetGeometryIndexForEdgeID(ed.id),
                                                     id_vector);
 
+                    std::vector<EdgeWeight> weight_vector;
+                    facade->GetUncompressedWeights(facade->GetGeometryIndexForEdgeID(ed.id),
+                                                   weight_vector);
+
+                    unsigned penalty = 0; // facade->GetPenaltyForEdgeID(ed.id);
+
+                    int total_weight = std::accumulate(weight_vector.begin(), weight_vector.end(), 0);
+
+                    std::cout << "total weight + penalty: " << (total_weight + penalty) << " vs ed.distance: " << ed.distance;
+                    BOOST_ASSERT(ed.distance == total_weight + penalty);
+
+                    BOOST_ASSERT(weight_vector.size() == id_vector.size());
                     const std::size_t start_index =
                         (unpacked_path.empty()
                              ? ((start_traversed_in_reverse)
@@ -318,21 +331,20 @@ template <class DataFacadeT, class Derived> class BasicRoutingInterface
                     for (std::size_t i = start_index; i < end_index; ++i)
                     {
                         unpacked_path.emplace_back(id_vector[i], name_index,
-                                                   extractor::TurnInstruction::NoTurn, 0,
+                                                   extractor::TurnInstruction::NoTurn, weight_vector[i],
                                                    travel_mode);
                     }
                     unpacked_path.back().turn_instruction = turn_instruction;
-                    unpacked_path.back().segment_duration = ed.distance;
                 }
             }
         }
-        if (SPECIAL_EDGEID != phantom_node_pair.target_phantom.packed_geometry_id)
+        if (SPECIAL_EDGEID != phantom_node_pair.target_phantom.forward_packed_geometry_id)
         {
             std::vector<unsigned> id_vector;
-            facade->GetUncompressedGeometry(phantom_node_pair.target_phantom.packed_geometry_id,
+            facade->GetUncompressedGeometry(phantom_node_pair.target_phantom.forward_packed_geometry_id,
                                             id_vector);
-            const bool is_local_path = (phantom_node_pair.source_phantom.packed_geometry_id ==
-                                        phantom_node_pair.target_phantom.packed_geometry_id) &&
+            const bool is_local_path = (phantom_node_pair.source_phantom.forward_packed_geometry_id ==
+                                        phantom_node_pair.target_phantom.forward_packed_geometry_id) &&
                                        unpacked_path.empty();
 
             std::size_t start_index = 0;

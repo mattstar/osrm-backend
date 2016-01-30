@@ -41,7 +41,7 @@ template <class EdgeDataT> class SharedDataFacade final : public BaseDataFacade<
     using RTreeLeaf = typename super::RTreeLeaf;
     using SharedRTree =
         util::StaticRTree<RTreeLeaf, util::ShM<util::FixedPointCoordinate, true>::vector, true>;
-    using SharedGeospatialQuery = GeospatialQuery<SharedRTree>;
+    using SharedGeospatialQuery = GeospatialQuery<SharedRTree, BaseDataFacade<EdgeDataT>>;
     using TimeStampedRTreePair = std::pair<unsigned, std::shared_ptr<SharedRTree>>;
     using RTreeNode = typename SharedRTree::TreeNode;
 
@@ -106,7 +106,7 @@ template <class EdgeDataT> class SharedDataFacade final : public BaseDataFacade<
                 tree_ptr, data_layout->num_entries[storage::SharedDataLayout::R_SEARCH_TREE],
                 file_index_path, m_coordinate_list)));
         m_geospatial_query.reset(
-            new SharedGeospatialQuery(*m_static_rtree->second, m_coordinate_list));
+            new SharedGeospatialQuery(*m_static_rtree->second, m_coordinate_list, *this));
     }
 
     void LoadGraph()
@@ -378,8 +378,8 @@ template <class EdgeDataT> class SharedDataFacade final : public BaseDataFacade<
         return m_edge_is_compressed.at(id);
     }
 
-    virtual void GetUncompressedGeometry(const unsigned id,
-                                         std::vector<unsigned> &result_nodes) const override final
+    virtual void GetUncompressedGeometry(const EdgeID id,
+                                         std::vector<NodeID> &result_nodes) const override final
     {
         const unsigned begin = m_geometry_indices.at(id);
         const unsigned end = m_geometry_indices.at(id + 1);
@@ -387,6 +387,12 @@ template <class EdgeDataT> class SharedDataFacade final : public BaseDataFacade<
         result_nodes.clear();
         result_nodes.insert(result_nodes.begin(), m_geometry_list.begin() + begin,
                             m_geometry_list.begin() + end);
+    }
+
+    virtual void GetUncompressedWeights(const EdgeID id,
+                                        std::vector<EdgeWeight> &result_weights) const override final
+    {
+        // TODO
     }
 
     virtual unsigned GetGeometryIndexForEdgeID(const unsigned id) const override final

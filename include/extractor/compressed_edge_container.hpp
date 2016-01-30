@@ -16,8 +16,13 @@ namespace extractor
 class CompressedEdgeContainer
 {
   public:
-    using CompressedNode = std::pair<NodeID, EdgeWeight>;
-    using EdgeBucket = std::vector<CompressedNode>;
+    struct CompressedEdge
+    {
+    public:
+        NodeID node_id;  // refers to an internal node-based-node
+        EdgeWeight weight;  // the weight of the edge leading to this node
+    };
+    using EdgeBucket = std::vector<CompressedEdge>;
 
     CompressedEdgeContainer();
     void CompressEdge(const EdgeID surviving_edge_id,

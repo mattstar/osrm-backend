@@ -21,14 +21,14 @@ namespace engine
 // Implements complex queries on top of an RTree and builds PhantomNodes from it.
 //
 // Only holds a weak reference on the RTree!
-template <typename RTreeT> class GeospatialQuery
+template <typename RTreeT, typename DataFacadeT> class GeospatialQuery
 {
     using EdgeData = typename RTreeT::EdgeData;
     using CoordinateList = typename RTreeT::CoordinateList;
 
   public:
-    GeospatialQuery(RTreeT &rtree_, std::shared_ptr<CoordinateList> coordinates_)
-        : rtree(rtree_), coordinates(std::move(coordinates_))
+    GeospatialQuery(RTreeT &rtree_, std::shared_ptr<CoordinateList> coordinates_, DataFacadeT &datafacade_)
+        : rtree(rtree_), coordinates(std::move(coordinates_)), datafacade(datafacade_)
     {
     }
 
@@ -147,16 +147,42 @@ template <typename RTreeT> class GeospatialQuery
         auto transformed = PhantomNodeWithDistance{PhantomNode{data, point_on_segment},
                                                    current_perpendicular_distance};
 
+        // Find the node-based-edge that this belongs to, and directly
+        // calculate the forward_weight, forward_offset, reverse_weight, reverse_offset
+
+        int forward_offset = 0, forward_weight = 0;
+        int reverse_offset = 0, reverse_weight = 0;
+
+        std::vector<EdgeWeight> forward_weight_vector;
+        datafacade.GetUncompressedWeights(transformed.phantom_node.forward_packed_geometry_id, forward_weight_vector);
+
+        for (int i = 0; i< transformed.phantom_node.fwd_segment_position; i++) {
+            forward_offset += forward_weight_vector[i];
+        }
+
+        for (int i = 0; i< forward_weight_vector.size() - transformed.phantom_node.fwd_segment_position - 1; i++) {
+            reverse_offset += forward_weight_vector[forward_weight_vector.size()-i-1];
+        }
+
         ratio = std::min(1.0, std::max(0.0, ratio));
+
+        forward_weight = forward_weight_vector[transformed.phantom_node.fwd_segment_position];
+        reverse_weight = forward_weight_vector[transformed.phantom_node.fwd_segment_position];
 
         if (SPECIAL_NODEID != transformed.phantom_node.forward_node_id)
         {
             transformed.phantom_node.forward_weight *= ratio;
+            forward_weight *= ratio;
         }
         if (SPECIAL_NODEID != transformed.phantom_node.reverse_node_id)
         {
             transformed.phantom_node.reverse_weight *= 1.0 - ratio;
+            reverse_weight *= 1.0 - ratio;
         }
+
+        util::SimpleLogger().Write() << "NEW: f_wt: " << forward_weight << " r_wt: " << reverse_weight << " f_off: " << forward_offset << " r_off " << reverse_offset;
+        util::SimpleLogger().Write() << "OLD: f_wt: " << transformed.phantom_node.forward_weight << " r_wt: " << transformed.phantom_node.reverse_weight << " f_off: " << transformed.phantom_node.forward_offset << " r_off " << transformed.phantom_node.reverse_offset;
+
         return transformed;
     }
 
@@ -184,6 +210,7 @@ template <typename RTreeT> class GeospatialQuery
 
     RTreeT &rtree;
     const std::shared_ptr<CoordinateList> coordinates;
+    DataFacadeT &datafacade;
 };
 }
 }
