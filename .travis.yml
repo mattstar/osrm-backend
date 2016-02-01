@@ -130,7 +130,7 @@ before_script:
   - rvm use 1.9.3
   - gem install bundler
   - bundle install
-  - mkdir build && cd build
+  - mkdir build && pushd build
   - export CXX=${COMPILER}
   - export OSRM_PORT=5000 OSRM_TIMEOUT=60
   - cmake .. -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS:-OFF} -DBUILD_TOOLS=1
@@ -147,10 +147,12 @@ script:
   - ./extractor-tests
   - ./engine-tests
   - ./util-tests
-  - cd ..
+  - popd
   - cucumber -p verify
   - make -C test/data
-  - mkdir example/build && cd example/build
+  - mkdir example/build && pushd example/build
   - cmake ..
   - make
   - ./osrm-example ../../test/data/berlin-latest.osrm
+  - popd
+  - ./scripts/format.sh
