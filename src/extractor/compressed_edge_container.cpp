@@ -176,7 +176,6 @@ void CompressedEdgeContainer::CompressEdge(const EdgeID edge_id_1,
     else
     {
         // we are certain that the second edge is atomic.
-        CompressedEdge edge { target_node_id, weight2 };
         edge_bucket_list1.emplace_back( CompressedEdge { target_node_id, weight2 });
     }
 }
