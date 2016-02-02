@@ -65,7 +65,6 @@ struct FixedPointCoordinate
 
 std::ostream &operator<<(std::ostream &out, const FixedPointCoordinate &coordinate);
 }
-
 }
 
 #endif /* COORDINATE_HPP_ */

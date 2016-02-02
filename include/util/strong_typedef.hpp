@@ -18,7 +18,7 @@ namespace osrm
     {                                                                                              \
         static_assert(std::is_arithmetic<From>(), "");                                             \
         From x;                                                                                    \
-        friend std::ostream& operator<<(std::ostream& stream, const To& inst);                     \
+        friend std::ostream &operator<<(std::ostream &stream, const To &inst);                     \
                                                                                                    \
       public:                                                                                      \
         To() = default;                                                                            \
@@ -43,7 +43,8 @@ namespace osrm
         }                                                                                          \
     };                                                                                             \
     }                                                                                              \
-    inline std::ostream& operator<<(std::ostream& stream, const To& inst) {                        \
+    inline std::ostream &operator<<(std::ostream &stream, const To &inst)                          \
+    {                                                                                              \
         return stream << #To << '(' << inst.x << ')';                                              \
     }
 }

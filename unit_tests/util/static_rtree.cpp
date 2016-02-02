@@ -307,15 +307,20 @@ BOOST_AUTO_TEST_CASE(regression_test)
     using Edge = std::pair<unsigned, unsigned>;
     GraphFixture fixture(
         {
-            Coord(40.0, 0.0), Coord(35.0, 5.0),
+         Coord(40.0, 0.0),
+         Coord(35.0, 5.0),
 
-            Coord(5.0, 5.0), Coord(0.0, 10.0),
+         Coord(5.0, 5.0),
+         Coord(0.0, 10.0),
 
-            Coord(20.0, 10.0), Coord(20.0, 5.0),
+         Coord(20.0, 10.0),
+         Coord(20.0, 5.0),
 
-            Coord(40.0, 100.0), Coord(35.0, 105.0),
+         Coord(40.0, 100.0),
+         Coord(35.0, 105.0),
 
-            Coord(5.0, 105.0), Coord(0.0, 110.0),
+         Coord(5.0, 105.0),
+         Coord(0.0, 110.0),
         },
         {Edge(0, 1), Edge(2, 3), Edge(4, 5), Edge(6, 7), Edge(8, 9)});
 
@@ -403,7 +408,7 @@ BOOST_AUTO_TEST_CASE(bearing_tests)
     using Edge = std::pair<unsigned, unsigned>;
     GraphFixture fixture(
         {
-            Coord(0.0, 0.0), Coord(10.0, 10.0),
+         Coord(0.0, 0.0), Coord(10.0, 10.0),
         },
         {Edge(0, 1), Edge(1, 0)});
 

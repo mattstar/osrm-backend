@@ -111,8 +111,8 @@ template <class DataFacadeT> class ViaRoutePlugin final : public BasePlugin
         auto snapped_phantoms = snapPhantomNodes(phantom_node_pair_list);
 
         InternalRouteResult raw_route;
-        auto build_phantom_pairs = [&raw_route](const PhantomNode &first_node,
-                                                const PhantomNode &second_node)
+        auto build_phantom_pairs =
+            [&raw_route](const PhantomNode &first_node, const PhantomNode &second_node)
         {
             raw_route.segment_end_coordinates.push_back(PhantomNodes{first_node, second_node});
         };

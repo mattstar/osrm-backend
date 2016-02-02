@@ -18,5 +18,4 @@ int OSRM::RunQuery(const RouteParameters &route_parameters, util::json::Object &
 {
     return engine_->RunQuery(route_parameters, json_result);
 }
-
 }

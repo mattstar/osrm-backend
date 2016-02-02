@@ -5,7 +5,7 @@
 
 namespace osrm
 {
-    using engine::RouteParameters;
+using engine::RouteParameters;
 }
 
 #endif

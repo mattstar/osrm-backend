@@ -64,7 +64,6 @@ class OSRM
     ~OSRM(); // needed because we need to define it with the implementation of OSRM_impl
     int RunQuery(const RouteParameters &route_parameters, json::Object &json_result);
 };
-
 }
 
 #endif // OSRM_HPP

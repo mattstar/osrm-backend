@@ -46,7 +46,7 @@ int main(int argc, const char *argv[]) try
     if (result_code / 100 == 2)
     {
         // Extract data out of JSON structure
-        auto& summary = json_result.values["route_summary"].get<osrm::json::Object>();
+        auto &summary = json_result.values["route_summary"].get<osrm::json::Object>();
         auto duration = summary.values["total_time"].get<osrm::json::Number>().value;
         auto distance = summary.values["total_distance"].get<osrm::json::Number>().value;
         std::cout << "duration: " << duration << std::endl;

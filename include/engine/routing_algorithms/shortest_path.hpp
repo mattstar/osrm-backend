@@ -36,8 +36,9 @@ class ShortestPathRouting final
 
     ~ShortestPathRouting() {}
 
-    inline bool
-    forceLoop(bool forward, const PhantomNode &source_phantom, const PhantomNode &target_phantom) const
+    inline bool forceLoop(bool forward,
+                          const PhantomNode &source_phantom,
+                          const PhantomNode &target_phantom) const
     {
         if (forward)
             return source_phantom.forward_node_id == target_phantom.forward_node_id &&

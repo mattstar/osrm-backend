@@ -317,7 +317,6 @@ template <class DataFacadeT> class RoundTripPlugin final : public BasePlugin
                 //     }
                 //     return s;
                 // }();
-
             }
             else
             {

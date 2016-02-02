@@ -22,8 +22,7 @@ enum class return_code : unsigned
     exit
 };
 
-return_code
-parseArguments(int argc, char *argv[], extractor::ExtractorConfig &extractor_config)
+return_code parseArguments(int argc, char *argv[], extractor::ExtractorConfig &extractor_config)
 {
     // declare a group of options that will be allowed only on command line
     boost::program_options::options_description generic_options("Options");
@@ -34,18 +33,16 @@ parseArguments(int argc, char *argv[], extractor::ExtractorConfig &extractor_con
         boost::program_options::value<boost::filesystem::path>(&extractor_config.restrictions_path),
         "Restrictions file in .osrm.restrictions format")(
         */
-        "config,c",
-        boost::program_options::value<boost::filesystem::path>(&extractor_config.config_file_path)
-            ->default_value("extractor.ini"),
+        "config,c", boost::program_options::value<boost::filesystem::path>(
+                        &extractor_config.config_file_path)->default_value("extractor.ini"),
         "Path to a configuration file.");
 
     // declare a group of options that will be allowed both on command line and in config file
     boost::program_options::options_description config_options("Configuration");
-    config_options.add_options()(
-        "profile,p",
-        boost::program_options::value<boost::filesystem::path>(&extractor_config.profile_path)
-            ->default_value("profile.lua"),
-        "Path to LUA routing profile")(
+    config_options.add_options()("profile,p",
+                                 boost::program_options::value<boost::filesystem::path>(
+                                     &extractor_config.profile_path)->default_value("profile.lua"),
+                                 "Path to LUA routing profile")(
         "threads,t",
         boost::program_options::value<unsigned int>(&extractor_config.requested_num_threads)
             ->default_value(tbb::task_scheduler_init::default_num_threads()),
@@ -55,9 +52,8 @@ parseArguments(int argc, char *argv[], extractor::ExtractorConfig &extractor_con
             ->implicit_value(true)
             ->default_value(false),
         "Generate a lookup table for internal edge-expanded-edge IDs to OSM node pairs")(
-        "small-component-size",
-        boost::program_options::value<unsigned int>(&extractor_config.small_component_size)
-            ->default_value(1000),
+        "small-component-size", boost::program_options::value<unsigned int>(
+                                    &extractor_config.small_component_size)->default_value(1000),
         "Number of nodes required before a strongly-connected-componennt is considered big "
         "(affects nearest neighbor snapping)");
 
@@ -115,8 +111,8 @@ parseArguments(int argc, char *argv[], extractor::ExtractorConfig &extractor_con
         // parse config file
         if (boost::filesystem::is_regular_file(extractor_config.config_file_path))
         {
-            util::SimpleLogger().Write() << "Reading options from: "
-                                   << extractor_config.config_file_path.string();
+            util::SimpleLogger().Write()
+                << "Reading options from: " << extractor_config.config_file_path.string();
             std::string ini_file_contents =
                 util::read_file_lower_content(extractor_config.config_file_path);
             std::stringstream config_stream(ini_file_contents);
@@ -139,7 +135,6 @@ parseArguments(int argc, char *argv[], extractor::ExtractorConfig &extractor_con
 
     return return_code::ok;
 }
-
 
 int main(int argc, char *argv[]) try
 {
