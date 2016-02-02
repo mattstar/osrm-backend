@@ -29,7 +29,7 @@ matrix:
         apt:
           sources: ['llvm-toolchain-precise', 'ubuntu-toolchain-r-test']
           packages: ['clang-3.8', 'libbz2-dev', 'libstxxl-dev', 'libstxxl1', 'libxml2-dev', 'libzip-dev', 'lua5.1', 'liblua5.1-0-dev', 'rubygems-integration', 'libtbb-dev', 'libgdal-dev', 'libluabind-dev', 'libboost-all-dev']
-      env: COMPILER='clang++-3.8' BUILD_TYPE='Release' BUILD_SHARED_LIBS=ON
+      env: COMPILER='clang++-3.8' BUILD_TYPE='Release' BUILD_SHARED_LIBS=ON RUN_CLANG_FORMAT=ON
 
     - os: linux
       compiler: clang
@@ -155,4 +155,7 @@ script:
   - make
   - ./osrm-example ../../test/data/berlin-latest.osrm
   - popd
-  - ./scripts/format.sh
+  - |
+    if [ -n "$RUN_CLANG_FORMAT" ]; then
+      ./scripts/format.sh
+    fi
