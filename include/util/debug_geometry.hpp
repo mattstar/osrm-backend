@@ -82,7 +82,7 @@ inline void DEBUG_GEOMETRY_START(const contractor::ContractorConfig &config)
     if (dg_output_debug_geometry)
     {
         debug_geometry_file.open(config.debug_geometry_path, std::ios::binary);
-        debug_geometry_file << "{\"type\":\"FeatureCollection\", \"features\":[" << std::endl;
+        debug_geometry_file << "{\"type\":\"FeatureCollection\", \"features\":[" << "\n";
     }
 }
 
@@ -94,7 +94,7 @@ inline void DEBUG_GEOMETRY_EDGE(int new_segment_weight,
     if (dg_output_debug_geometry)
     {
         if (!dg_first_debug_geometry)
-            debug_geometry_file << "," << std::endl;
+            debug_geometry_file << "," << "\n";
         debug_geometry_file << "{ \"type\":\"Feature\",\"properties\":{\"original\":false, "
                                "\"weight\":" << new_segment_weight / 10.0 << ",\"speed\":"
                             << static_cast<int>(std::floor((segment_length / new_segment_weight) *
@@ -104,7 +104,7 @@ inline void DEBUG_GEOMETRY_EDGE(int new_segment_weight,
         debug_geometry_file << "\"timestamp\": \"" << dg_time_buffer << "\"},";
         debug_geometry_file << "\"geometry\":{\"type\":\"LineString\",\"coordinates\":[[!!"
                             << previous_osm_node_id << "!!],[!!" << this_osm_node_id << "!!]]}}"
-                            << std::endl;
+                            << "\n";
         dg_first_debug_geometry = false;
     }
 }
@@ -113,7 +113,7 @@ inline void DEBUG_GEOMETRY_STOP()
 {
     if (dg_output_debug_geometry)
     {
-        debug_geometry_file << "\n]}" << std::endl;
+        debug_geometry_file << "\n]}" << "\n";
         debug_geometry_file.close();
     }
 }
@@ -124,7 +124,7 @@ inline void DEBUG_TURNS_START(const std::string &debug_turns_path)
     if (dg_output_turn_debug)
     {
         dg_debug_turns_file.open(debug_turns_path);
-        dg_debug_turns_file << "{\"type\":\"FeatureCollection\", \"features\":[" << std::endl;
+        dg_debug_turns_file << "{\"type\":\"FeatureCollection\", \"features\":[" << "\n";
     }
 }
 
@@ -136,7 +136,7 @@ inline void DEBUG_SIGNAL(const NodeID node,
     {
         const extractor::QueryNode &nodeinfo = m_node_info_list[node];
         if (!dg_first_turn_debug)
-            dg_debug_turns_file << "," << std::endl;
+            dg_debug_turns_file << "," << "\n";
         dg_debug_turns_file
             << "{ \"type\":\"Feature\",\"properties\":{\"type\":\"trafficlights\",\"cost\":"
             << traffic_signal_penalty / 10. << "},";
@@ -155,7 +155,7 @@ inline void DEBUG_UTURN(const NodeID node,
     {
         const extractor::QueryNode &nodeinfo = m_node_info_list[node];
         if (!dg_first_turn_debug)
-            dg_debug_turns_file << "," << std::endl;
+            dg_debug_turns_file << "," << "\n";
         dg_debug_turns_file
             << "{ \"type\":\"Feature\",\"properties\":{\"type\":\"trafficlights\",\"cost\":"
             << traffic_signal_penalty / 10. << "},";
@@ -184,7 +184,7 @@ inline void DEBUG_TURN(const NodeID node,
         }
 
         if (!dg_first_turn_debug)
-            dg_debug_turns_file << "," << std::endl;
+            dg_debug_turns_file << "," << "\n";
         dg_debug_turns_file << "{ \"type\":\"Feature\",\"properties\":{\"type\":\"turn\",\"cost\":"
                             << turn_penalty / 10.
                             << ",\"turn_angle\":" << static_cast<int>(turn_angle)
@@ -200,7 +200,7 @@ inline void DEBUG_TURNS_STOP()
 {
     if (dg_output_turn_debug)
     {
-        dg_debug_turns_file << "\n]}" << std::endl;
+        dg_debug_turns_file << "\n]}" << "\n";
         dg_debug_turns_file.close();
     }
 }
