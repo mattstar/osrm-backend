@@ -3,7 +3,7 @@
 
 #include "engine/phantom_node.hpp"
 #include "extractor/travel_mode.hpp"
-#include "extractor/turn_instructions.hpp"
+#include "guidance/turn_instruction.hpp"
 #include "util/typedefs.hpp"
 
 #include "osrm/coordinate.hpp"
@@ -24,7 +24,7 @@ struct PathData
     // duration that is traveled on the segment until the turn is reached
     EdgeWeight duration_until_turn;
     // instruction to execute at the turn
-    extractor::TurnInstruction turn_instruction;
+    guidance::TurnInstruction turn_instruction;
     // travel mode of the street that leads to the turn
     extractor::TravelMode travel_mode : 4;
 };
