@@ -335,17 +335,17 @@ template <class DataFacadeT, class Derived> class BasicRoutingInterface
                     unpacked_path.back().turn_instruction = turn_instruction;
                     // Last segment gets the penalty part
                     int penalty = (ed.distance - total_weight);
-                    unpacked_path.back().segment_duration += (ed.distance - total_weight);
+                    unpacked_path.back().segment_duration += penalty;
                 }
             }
         }
-        if (SPECIAL_EDGEID != phantom_node_pair.target_phantom.forward_packed_geometry_id)
+        if (phantom_node_pair.target_phantom.is_packed)
         {
             std::vector<unsigned> id_vector;
-            facade->GetUncompressedGeometry(phantom_node_pair.target_phantom.forward_packed_geometry_id,
+            facade->GetUncompressedGeometry(phantom_node_pair.target_phantom.forward_weight_or_packed_geometry_id,
                                             id_vector);
-            const bool is_local_path = (phantom_node_pair.source_phantom.forward_packed_geometry_id ==
-                                        phantom_node_pair.target_phantom.forward_packed_geometry_id) &&
+            const bool is_local_path = (phantom_node_pair.source_phantom.forward_weight_or_packed_geometry_id ==
+                                        phantom_node_pair.target_phantom.forward_weight_or_packed_geometry_id) &&
                                        unpacked_path.empty();
 
             std::size_t start_index = 0;

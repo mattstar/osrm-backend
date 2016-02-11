@@ -150,44 +150,63 @@ template <typename RTreeT, typename DataFacadeT> class GeospatialQuery
         // Find the node-based-edge that this belongs to, and directly
         // calculate the forward_weight, forward_offset, reverse_weight, reverse_offset
 
-        int forward_offset = 0, forward_weight = 0;
-        int reverse_offset = 0, reverse_weight = 0;
+        if (transformed.phantom_node.is_packed)
+        {
+            // Note: because this edge does not have a packed geometry, the
+            //   forward/reverse_weight_or_packed_geometry_id fields contain
+            //   packed_geometry_id values
+            int forward_offset = 0, forward_weight = 0;
+            int reverse_offset = 0, reverse_weight = 0;
 
-        std::vector<EdgeWeight> forward_weight_vector;
-        datafacade.GetUncompressedWeights(transformed.phantom_node.forward_packed_geometry_id, forward_weight_vector);
+            if (transformed.phantom_node.forward_weight_or_packed_geometry_id != (SPECIAL_EDGEID >> 1)) {
+                std::vector<EdgeWeight> forward_weight_vector;
+                datafacade.GetUncompressedWeights(transformed.phantom_node.forward_weight_or_packed_geometry_id,
+                                                forward_weight_vector);
+                for (std::size_t i = 0; i < transformed.phantom_node.fwd_segment_position; i++)
+                {
+                    forward_offset += forward_weight_vector[i];
+                }
+                forward_weight = forward_weight_vector[transformed.phantom_node.fwd_segment_position];
+            }
 
-        std::vector<EdgeWeight> reverse_weight_vector;
-        datafacade.GetUncompressedWeights(transformed.phantom_node.reverse_packed_geometry_id, reverse_weight_vector);
+            if (transformed.phantom_node.reverse_weight_or_packed_geometry_id != (SPECIAL_EDGEID >> 1)) {
+                std::vector<EdgeWeight> reverse_weight_vector;
+                datafacade.GetUncompressedWeights(transformed.phantom_node.reverse_weight_or_packed_geometry_id,
+                                                reverse_weight_vector);
 
-        BOOST_ASSERT(reverse_weight_vector.size() == forward_weight_vector.size());
+                //BOOST_ASSERT(reverse_weight_vector.size() == forward_weight_vector.size());
+                BOOST_ASSERT(transformed.phantom_node.fwd_segment_position < reverse_weight_vector.size());
 
-        for (int i = 0; i< transformed.phantom_node.fwd_segment_position; i++) {
-            forward_offset += forward_weight_vector[i];
+                for (std::size_t i = 0; i < reverse_weight_vector.size() - transformed.phantom_node.fwd_segment_position - 1; i++)
+                {
+                    reverse_offset += reverse_weight_vector[i];
+                }
+                reverse_weight = reverse_weight_vector[reverse_weight_vector.size() -
+                                                        transformed.phantom_node.fwd_segment_position - 1];
+            }
+
+            transformed.phantom_node.forward_weight = forward_weight;
+            transformed.phantom_node.reverse_weight = reverse_weight;
+            transformed.phantom_node.forward_offset = forward_offset;
+            transformed.phantom_node.reverse_offset = reverse_offset;
         }
-
-        for (int i = 0; i< reverse_weight_vector.size() - transformed.phantom_node.fwd_segment_position - 1; i++) {
-            reverse_offset += reverse_weight_vector[i];
+        else
+        {
+            transformed.phantom_node.forward_offset = 0;
+            transformed.phantom_node.reverse_offset = 0;
+            // Note: because this edge does not have a packed geometry, the
+            //   forward/reverse_weight_or_packed_geometry_id fields contain
+            //   weight values
+            transformed.phantom_node.forward_weight = transformed.phantom_node.forward_weight_or_packed_geometry_id;
+            transformed.phantom_node.reverse_weight = transformed.phantom_node.reverse_weight_or_packed_geometry_id;
         }
 
         ratio = std::min(1.0, std::max(0.0, ratio));
-
-        forward_weight = forward_weight_vector[transformed.phantom_node.fwd_segment_position];
-        reverse_weight = reverse_weight_vector[reverse_weight_vector.size() - transformed.phantom_node.fwd_segment_position - 1];
-
-        transformed.phantom_node.forward_weight = forward_weight;
-        transformed.phantom_node.reverse_weight = reverse_weight;
-        transformed.phantom_node.forward_offset = forward_offset;
-        transformed.phantom_node.reverse_offset = reverse_offset;
-
-        if (SPECIAL_NODEID != transformed.phantom_node.forward_node_id)
-        {
+        if (SPECIAL_NODEID != transformed.phantom_node.forward_node_id) {
             transformed.phantom_node.forward_weight *= ratio;
-            forward_weight *= ratio;
         }
-        if (SPECIAL_NODEID != transformed.phantom_node.reverse_node_id)
-        {
+        if (SPECIAL_NODEID != transformed.phantom_node.reverse_node_id) {
             transformed.phantom_node.reverse_weight *= 1.0 - ratio;
-            reverse_weight *= 1.0 - ratio;
         }
 
         return transformed;
