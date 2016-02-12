@@ -329,11 +329,11 @@ template <class DataFacadeT, class Derived> class BasicRoutingInterface
                     for (std::size_t i = start_index; i < end_index; ++i)
                     {
                         unpacked_path.emplace_back(id_vector[i], name_index,
-                                                   extractor::TurnInstruction::NoTurn, 0,
+                                                   extractor::TurnInstruction::NoTurn, (i==start_index?0:weight_vector[i-1]),
                                                    travel_mode);
                     }
                     unpacked_path.back().turn_instruction = turn_instruction;
-                    unpacked_path.back().segment_duration = ed.distance;
+                    unpacked_path.back().segment_duration += (ed.distance - total_weight);
                 }
             }
         }
