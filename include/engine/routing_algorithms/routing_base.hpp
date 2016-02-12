@@ -329,13 +329,11 @@ template <class DataFacadeT, class Derived> class BasicRoutingInterface
                     for (std::size_t i = start_index; i < end_index; ++i)
                     {
                         unpacked_path.emplace_back(id_vector[i], name_index,
-                                                   extractor::TurnInstruction::NoTurn, weight_vector[i],
+                                                   extractor::TurnInstruction::NoTurn, 0,
                                                    travel_mode);
                     }
                     unpacked_path.back().turn_instruction = turn_instruction;
-                    // Last segment gets the penalty part
-                    int penalty = (ed.distance - total_weight);
-                    unpacked_path.back().segment_duration += penalty;
+                    unpacked_path.back().segment_duration = ed.distance;
                 }
             }
         }
@@ -346,7 +344,8 @@ template <class DataFacadeT, class Derived> class BasicRoutingInterface
                                             id_vector);
             const bool is_local_path = (phantom_node_pair.source_phantom.forward_weight_or_packed_geometry_id ==
                                         phantom_node_pair.target_phantom.forward_weight_or_packed_geometry_id) &&
-                                       unpacked_path.empty();
+                                        phantom_node_pair.source_phantom.is_packed &&
+                                        unpacked_path.empty();
 
             std::size_t start_index = 0;
             if (is_local_path)
