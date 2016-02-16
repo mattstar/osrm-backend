@@ -94,6 +94,10 @@ struct RouteParameters
 
     void SetCoordinatesFromGeometry(const std::string &geometry_string);
 
+    void SetX(const int &x);
+    void SetZ(const int &z);
+    void SetY(const int &y);
+
     short zoom_level;
     bool print_instructions;
     bool alternate_route;
@@ -118,6 +122,9 @@ struct RouteParameters
     std::vector<FixedPointCoordinate> coordinates;
     std::vector<bool> is_destination;
     std::vector<bool> is_source;
+    int z;
+    int x;
+    int y;
 };
 }
 }
