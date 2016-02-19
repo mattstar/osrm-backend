@@ -3,7 +3,7 @@
 
 #include "extractor/travel_mode.hpp"
 #include "util/typedefs.hpp"
-#include "guidance/classification_data.hpp"
+#include "engine/guidance/classification_data.hpp"
 
 #include <string>
 #include <vector>
@@ -104,7 +104,7 @@ struct ExtractionWay
     bool is_startpoint;
     TravelMode forward_travel_mode : 4;
     TravelMode backward_travel_mode : 4;
-    guidance::RoadClassificationData road_classification_data;
+    engine::guidance::RoadClassificationData road_classification_data;
 };
 }
 }

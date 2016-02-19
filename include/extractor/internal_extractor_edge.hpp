@@ -9,7 +9,7 @@
 
 #include "osrm/coordinate.hpp"
 #include <utility>
-#include "guidance/classification_data.hpp"
+#include "engine/guidance/classification_data.hpp"
 
 namespace osrm
 {
@@ -52,7 +52,7 @@ struct InternalExtractorEdge
                  true,
                  TRAVEL_MODE_INACCESSIBLE,
                  false,
-                 guidance::RoadClassificationData::INVALID())
+                 engine::guidance::RoadClassificationData::INVALID())
     {
     }
 
@@ -67,7 +67,7 @@ struct InternalExtractorEdge
                                    bool startpoint,
                                    TravelMode travel_mode,
                                    bool is_split,
-                                   guidance::RoadClassificationData road_classification)
+                                   engine::guidance::RoadClassificationData road_classification)
         : result(OSMNodeID(source),
                  OSMNodeID(target),
                  name_id,
@@ -95,12 +95,14 @@ struct InternalExtractorEdge
     static InternalExtractorEdge min_osm_value()
     {
         return InternalExtractorEdge(MIN_OSM_NODEID, MIN_OSM_NODEID, 0, WeightData(), false, false,
-                                     false, false, true, TRAVEL_MODE_INACCESSIBLE, false, guidance::RoadClassificationData::INVALID());
+                                     false, false, true, TRAVEL_MODE_INACCESSIBLE, false,
+                                     engine::guidance::RoadClassificationData::INVALID());
     }
     static InternalExtractorEdge max_osm_value()
     {
         return InternalExtractorEdge(MAX_OSM_NODEID, MAX_OSM_NODEID, 0, WeightData(), false, false,
-                                     false, false, true, TRAVEL_MODE_INACCESSIBLE, false, guidance::RoadClassificationData::INVALID());
+                                     false, false, true, TRAVEL_MODE_INACCESSIBLE, false,
+                                     engine::guidance::RoadClassificationData::INVALID());
     }
 
     static InternalExtractorEdge min_internal_value()

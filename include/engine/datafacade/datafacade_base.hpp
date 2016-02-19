@@ -7,7 +7,7 @@
 #include "extractor/external_memory_node.hpp"
 #include "contractor/query_edge.hpp"
 #include "engine/phantom_node.hpp"
-#include "guidance/turn_instruction.hpp"
+#include "engine/guidance/turn_instruction.hpp"
 #include "util/integer_range.hpp"
 #include "util/exception.hpp"
 #include "util/string_util.hpp"

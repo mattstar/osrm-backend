@@ -8,6 +8,8 @@
 
 namespace osrm
 {
+namespace engine
+{
 namespace guidance
 {
 
@@ -63,7 +65,8 @@ inline InstructionSymbol getSymbol(const TurnInstruction instruction)
     {
         return directTranslation(instruction.direction_modifier);
     }
-    else if (instruction.type == TurnType::EnterRoundabout || instruction.type == TurnType::EnterRotary)
+    else if (instruction.type == TurnType::EnterRoundabout ||
+             instruction.type == TurnType::EnterRotary)
     {
         return InstructionSymbol::EnterRoundAbout;
     }
@@ -244,6 +247,7 @@ inline bool isConflict(const TurnInstruction first, const TurnInstruction second
 #endif
 
 } // namespace guidance
+} // namespace engine
 } // namespace osrm
 
 #endif /* OSRM_GUIDANCE_INSTRUCTION_SYMBOLS_HPP */

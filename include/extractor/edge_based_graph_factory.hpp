@@ -11,7 +11,7 @@
 #include "extractor/original_edge_data.hpp"
 #include "extractor/query_node.hpp"
 
-#include "guidance/turn_instruction.hpp"
+#include "engine/guidance/turn_instruction.hpp"
 
 #include "util/node_based_graph.hpp"
 #include "util/typedefs.hpp"
@@ -79,12 +79,12 @@ class EdgeBasedGraphFactory
     // with known angle.
     // Handles special cases like u-turns and roundabouts
     // For basic turns, the turn based on the angle-classification is returned
-    guidance::TurnInstruction AnalyzeTurn(const NodeID u,
-                                          const EdgeID e1,
-                                          const NodeID v,
-                                          const EdgeID e2,
-                                          const NodeID w,
-                                          const double angle) const;
+    engine::guidance::TurnInstruction AnalyzeTurn(const NodeID u,
+                                                  const EdgeID e1,
+                                                  const NodeID v,
+                                                  const EdgeID e2,
+                                                  const NodeID w,
+                                                  const double angle) const;
 
     std::int32_t GetTurnPenalty(double angle, lua_State *lua_state) const;
 
@@ -141,9 +141,9 @@ class EdgeBasedGraphFactory
     {
         EdgeID eid; // the id of the arc
         bool valid; // a turn may be relevant to good instructions, even if we cannot take the road
-        double angle;                          // the approximated angle of the turn
-        guidance::TurnInstruction instruction; // a proposed instruction
-        double confidence;                     // how close to the border is the turn?
+        double angle;                                  // the approximated angle of the turn
+        engine::guidance::TurnInstruction instruction; // a proposed instruction
+        double confidence;                             // how close to the border is the turn?
 
         std::string toString() const
         {
@@ -169,10 +169,13 @@ class EdgeBasedGraphFactory
     std::vector<TurnCandidate> optimizeCandidates(const EdgeID via_edge,
                                                   std::vector<TurnCandidate> turn_candidates) const;
 
-    std::vector<TurnCandidate> optimizeRamps(const EdgeID via_edge, std::vector<TurnCandidate> turn_candidates) const;
+    std::vector<TurnCandidate> optimizeRamps(const EdgeID via_edge,
+                                             std::vector<TurnCandidate> turn_candidates) const;
 
-    guidance::TurnType checkForkAndEnd( const EdgeID via_edge, const std::vector<TurnCandidate> &turn_candidates) const;
-    std::vector<TurnCandidate> handleForkAndEnd( const guidance::TurnType type, std::vector<TurnCandidate> turn_candidates) const;
+    engine::guidance::TurnType
+    checkForkAndEnd(const EdgeID via_edge, const std::vector<TurnCandidate> &turn_candidates) const;
+    std::vector<TurnCandidate> handleForkAndEnd(const engine::guidance::TurnType type,
+                                                std::vector<TurnCandidate> turn_candidates) const;
 
     std::vector<TurnCandidate> suppressTurns(const EdgeID via_edge,
                                              std::vector<TurnCandidate> turn_candidates) const;

@@ -9,8 +9,8 @@
 #include "util/timing_util.hpp"
 #include "util/exception.hpp"
 
-#include "guidance/turn_classification.hpp"
-#include "guidance/guidance_toolkit.hpp"
+#include "engine/guidance/turn_classification.hpp"
+#include "engine/guidance/guidance_toolkit.hpp"
 
 #include "util/debug_geometry.hpp"
 
@@ -44,14 +44,24 @@ const double constexpr NARROW_TURN_ANGLE = 35.;
 const double constexpr FUZZY_STRAIGHT_ANGLE = 15.;
 const double constexpr DISTINCTION_RATIO = 2;
 
-using guidance::TurnInstruction;
-using guidance::DirectionModifier;
-using guidance::TurnType;
-using guidance::FunctionalRoadClass;
+using engine::guidance::TurnPossibility;
+using engine::guidance::TurnInstruction;
+using engine::guidance::DirectionModifier;
+using engine::guidance::TurnType;
+using engine::guidance::FunctionalRoadClass;
 
-using guidance::isLowPriorityRoadClass;
-using guidance::angularDeviation;
-using guidance::getTurnDirection;
+using engine::guidance::classifyIntersection;
+using engine::guidance::isLowPriorityRoadClass;
+using engine::guidance::angularDeviation;
+using engine::guidance::getTurnDirection;
+using engine::guidance::getRepresentativeCoordinate;
+using engine::guidance::isBasic;
+using engine::guidance::isRampClass;
+using engine::guidance::isUturn;
+using engine::guidance::isConflict;
+using engine::guidance::isSlightTurn;
+using engine::guidance::isSlightModifier;
+using engine::guidance::mirrorDirectionModifier;
 
 // Configuration to find representative candidate for turn angle calculations
 
@@ -430,8 +440,8 @@ void EdgeBasedGraphFactory::GenerateEdgeExpandedEdges(
 
     struct CompareTurnPossibilities
     {
-        bool operator()(const std::vector<guidance::TurnPossibility> &left,
-                        const std::vector<guidance::TurnPossibility> &right) const
+        bool operator()(const std::vector<TurnPossibility> &left,
+                        const std::vector<TurnPossibility> &right) const
         {
             if (left.size() < right.size())
                 return true;
@@ -450,12 +460,12 @@ void EdgeBasedGraphFactory::GenerateEdgeExpandedEdges(
         }
     };
 
-    std::map<std::vector<guidance::TurnPossibility>, std::vector<util::FixedPointCoordinate>,
+    std::map<std::vector<TurnPossibility>, std::vector<util::FixedPointCoordinate>,
              CompareTurnPossibilities> turn_types;
 
     for (const auto node_u : util::irange(0u, m_node_based_graph->GetNumberOfNodes()))
     {
-        auto turn_possibilities = guidance::classifyIntersection(
+        auto turn_possibilities = classifyIntersection(
             node_u, *m_node_based_graph, m_compressed_edge_container, m_node_info_list);
         if (turn_possibilities.empty())
             continue;
@@ -819,10 +829,10 @@ EdgeBasedGraphFactory::optimizeCandidates(const EdgeID via_eid,
     {
         if (isUturn(turn_candidates[getLeft(0)].instruction))
             turn_candidates[getLeft(0)].instruction.direction_modifier =
-                guidance::DirectionModifier::SharpLeft;
+                DirectionModifier::SharpLeft;
         if (isUturn(turn_candidates[getRight(0)].instruction))
             turn_candidates[getRight(0)].instruction.direction_modifier =
-                guidance::DirectionModifier::SharpRight;
+                DirectionModifier::SharpRight;
     }
 
     const auto keepStraight = [](double angle)
@@ -833,7 +843,7 @@ EdgeBasedGraphFactory::optimizeCandidates(const EdgeID via_eid,
     for (std::size_t turn_index = 0; turn_index < turn_candidates.size(); ++turn_index)
     {
         auto &turn = turn_candidates[turn_index];
-        if (!guidance::isBasic(turn.instruction.type) || isUturn(turn.instruction) ||
+        if (!isBasic(turn.instruction.type) || isUturn(turn.instruction) ||
             isOnRoundabout(turn.instruction))
             continue;
         auto &left = turn_candidates[getLeft(turn_index)];
@@ -844,15 +854,15 @@ EdgeBasedGraphFactory::optimizeCandidates(const EdgeID via_eid,
                 << m_node_info_list[m_node_based_graph->GetTarget(via_eid)].lat << " "
                 << m_node_info_list[m_node_based_graph->GetTarget(via_eid)].lon << std::endl;
         }
-        if (guidance::isConflict(turn.instruction, left.instruction))
+        if (isConflict(turn.instruction, left.instruction))
         {
             // begin of a conflicting region
             std::size_t conflict_begin = turn_index;
             std::size_t conflict_end = getLeft(turn_index);
             std::size_t conflict_size = 2;
-            while (guidance::isConflict(turn_candidates[getLeft(conflict_end)].instruction,
-                                        turn.instruction) &&
-                   conflict_size < turn_candidates.size())
+            while (
+                isConflict(turn_candidates[getLeft(conflict_end)].instruction, turn.instruction) &&
+                conflict_size < turn_candidates.size())
             {
                 conflict_end = getLeft(conflict_end);
                 ++conflict_size;
@@ -872,12 +882,12 @@ EdgeBasedGraphFactory::optimizeCandidates(const EdgeID via_eid,
             auto &candidate_at_begin = turn_candidates[conflict_begin];
             if (conflict_size == 2)
             {
-                if (turn.instruction.direction_modifier == guidance::DirectionModifier::Straight)
+                if (turn.instruction.direction_modifier == DirectionModifier::Straight)
                 {
                     if (instruction_left_of_end.direction_modifier !=
-                            guidance::DirectionModifier::SlightLeft &&
+                            DirectionModifier::SlightLeft &&
                         instruction_right_of_begin.direction_modifier !=
-                            guidance::DirectionModifier::SlightRight)
+                            DirectionModifier::SlightRight)
                     {
                         std::int32_t resolved_count = 0;
                         // uses side-effects in resolve
@@ -921,14 +931,13 @@ EdgeBasedGraphFactory::optimizeCandidates(const EdgeID via_eid,
                                      RESOLVE_TO_RIGHT))
                         continue;
                 }
-                if (guidance::isSlightTurn(turn.instruction) || isSharpTurn(turn.instruction))
+                if (isSlightTurn(turn.instruction) || isSharpTurn(turn.instruction))
                 {
-                    auto resolve_direction = (turn.instruction.direction_modifier ==
-                                                  guidance::DirectionModifier::SlightRight ||
-                                              turn.instruction.direction_modifier ==
-                                                  guidance::DirectionModifier::SharpLeft)
-                                                 ? RESOLVE_TO_RIGHT
-                                                 : RESOLVE_TO_LEFT;
+                    auto resolve_direction =
+                        (turn.instruction.direction_modifier == DirectionModifier::SlightRight ||
+                         turn.instruction.direction_modifier == DirectionModifier::SharpLeft)
+                            ? RESOLVE_TO_RIGHT
+                            : RESOLVE_TO_LEFT;
                     if (resolve_direction == RESOLVE_TO_RIGHT &&
                         resolveTransitive(
                             candidate_at_begin.instruction, instruction_right_of_begin,
@@ -960,7 +969,7 @@ EdgeBasedGraphFactory::optimizeCandidates(const EdgeID via_eid,
                 if (!resolve(candidate_at_begin.instruction, instruction_right_of_begin,
                              RESOLVE_TO_RIGHT))
                 {
-                    if (guidance::isSlightTurn(turn.instruction))
+                    if (isSlightTurn(turn.instruction))
                         resolveTransitive(
                             candidate_at_begin.instruction, instruction_right_of_begin,
                             turn_candidates[getRight(getRight(conflict_begin))].instruction,
@@ -974,7 +983,7 @@ EdgeBasedGraphFactory::optimizeCandidates(const EdgeID via_eid,
                 if (!resolve(candidate_at_end.instruction, instruction_left_of_end,
                              RESOLVE_TO_LEFT))
                 {
-                    if (guidance::isSlightTurn(turn.instruction))
+                    if (isSlightTurn(turn.instruction))
                         resolveTransitive(
                             candidate_at_end.instruction, instruction_left_of_end,
                             turn_candidates[getLeft(getLeft(conflict_end))].instruction,
@@ -1013,12 +1022,11 @@ bool EdgeBasedGraphFactory::isObviousChoice(const EdgeID via_eid,
     const auto hasValidRatio = [this](const TurnCandidate &left, const TurnCandidate &center,
                                       const TurnCandidate &right)
     {
-        auto angle_left =
-            (left.angle > 180) ? guidance::angularDeviation(left.angle, STRAIGHT_ANGLE) : 180;
+        auto angle_left = (left.angle > 180) ? angularDeviation(left.angle, STRAIGHT_ANGLE) : 180;
         auto angle_right =
-            (right.angle < 180) ? guidance::angularDeviation(right.angle, STRAIGHT_ANGLE) : 180;
-        auto self_angle = guidance::angularDeviation(center.angle, STRAIGHT_ANGLE);
-        return guidance::angularDeviation(center.angle, STRAIGHT_ANGLE) < NARROW_TURN_ANGLE &&
+            (right.angle < 180) ? angularDeviation(right.angle, STRAIGHT_ANGLE) : 180;
+        auto self_angle = angularDeviation(center.angle, STRAIGHT_ANGLE);
+        return angularDeviation(center.angle, STRAIGHT_ANGLE) < NARROW_TURN_ANGLE &&
                ((center.angle < STRAIGHT_ANGLE)
                     ? (angle_right > self_angle && angle_left / self_angle > DISTINCTION_RATIO)
                     : (angle_left > self_angle && angle_right / self_angle > DISTINCTION_RATIO));
@@ -1032,7 +1040,7 @@ bool EdgeBasedGraphFactory::isObviousChoice(const EdgeID via_eid,
                      turn_candidates[0].instruction.direction_modifier == DirectionModifier::UTurn);
         for (size_t i = 0; i < turn_candidates.size(); ++i)
         {
-            if (i == turn_index || turn_candidates[i].angle == 0) //skip self and u-turn
+            if (i == turn_index || turn_candidates[i].angle == 0) // skip self and u-turn
                 continue;
             if (!isLowPriorityRoadClass(m_node_based_graph->GetEdgeData(turn_candidates[i].eid)
                                             .road_classification.road_class))
@@ -1048,12 +1056,11 @@ bool EdgeBasedGraphFactory::isObviousChoice(const EdgeID via_eid,
     return turn_candidates.size() == 1 ||
            // only non u-turn
            (turn_candidates.size() == 2 &&
-            guidance::isUturn(candidate_to_the_left.instruction)) || // nearly straight turn
-           guidance::angularDeviation(candidate.angle, STRAIGHT_ANGLE) <
-               MAXIMAL_ALLOWED_NO_TURN_DEVIATION ||
+            isUturn(candidate_to_the_left.instruction)) || // nearly straight turn
+           angularDeviation(candidate.angle, STRAIGHT_ANGLE) < MAXIMAL_ALLOWED_NO_TURN_DEVIATION ||
            hasValidRatio(candidate_to_the_left, candidate, candidate_to_the_right) ||
            (in_data.name_id != 0 && in_data.name_id == out_data.name_id &&
-            guidance::angularDeviation(candidate.angle, STRAIGHT_ANGLE) < NARROW_TURN_ANGLE / 2);
+            angularDeviation(candidate.angle, STRAIGHT_ANGLE) < NARROW_TURN_ANGLE / 2);
 }
 
 std::vector<EdgeBasedGraphFactory::TurnCandidate>
@@ -1146,15 +1153,16 @@ EdgeBasedGraphFactory::suppressTurns(const EdgeID via_eid,
     for (std::size_t turn_index = 0; turn_index < turn_candidates.size(); ++turn_index)
     {
         auto &candidate = turn_candidates[turn_index];
-        if (!guidance::isBasic(candidate.instruction.type))
+        if (!isBasic(candidate.instruction.type))
             continue;
 
         const EdgeData &out_data = m_node_based_graph->GetEdgeData(candidate.eid);
-        if (out_data.name_id == in_data.name_id && in_data.name_id != 0 && !has_obvious_with_same_name)
+        if (out_data.name_id == in_data.name_id && in_data.name_id != 0 &&
+            !has_obvious_with_same_name)
         {
             candidate.instruction.type = TurnType::Continue;
         }
-        if (candidate.valid && !guidance::isUturn(candidate.instruction))
+        if (candidate.valid && !isUturn(candidate.instruction))
         {
             // TODO road category would be useful to indicate obviousness of turn
             // check if turn can be omitted or at least changed
@@ -1164,12 +1172,10 @@ EdgeBasedGraphFactory::suppressTurns(const EdgeID via_eid,
             // make very slight instructions straight, if they are the only valid choice going
             // with
             // at most a slight turn
-            if ((!guidance::isSlightModifier(guidance::getTurnDirection(left.angle)) ||
-                 !left.valid) &&
-                (!guidance::isSlightModifier(guidance::getTurnDirection(right.angle)) ||
-                 !right.valid) &&
-                guidance::angularDeviation(candidate.angle, STRAIGHT_ANGLE) < FUZZY_STRAIGHT_ANGLE)
-                candidate.instruction.direction_modifier = guidance::DirectionModifier::Straight;
+            if ((!isSlightModifier(getTurnDirection(left.angle)) || !left.valid) &&
+                (!isSlightModifier(getTurnDirection(right.angle)) || !right.valid) &&
+                angularDeviation(candidate.angle, STRAIGHT_ANGLE) < FUZZY_STRAIGHT_ANGLE)
+                candidate.instruction.direction_modifier = DirectionModifier::Straight;
 
             // TODO this smaller comparison for turns is DANGEROUS, has to be revised if turn
             // instructions change
@@ -1181,7 +1187,7 @@ EdgeBasedGraphFactory::suppressTurns(const EdgeID via_eid,
 
                     if (in_data.name_id == out_data.name_id) // same road
                     {
-                        candidate.instruction.type = guidance::TurnType::Suppressed;
+                        candidate.instruction.type = TurnType::Suppressed;
                     }
 
                     else if (!has_obvious_with_same_name)
@@ -1193,32 +1199,26 @@ EdgeBasedGraphFactory::suppressTurns(const EdgeID via_eid,
                         {
                             candidate.instruction.type = TurnType::Merge;
                             candidate.instruction.direction_modifier =
-                                guidance::mirrorDirectionModifier(
-                                    candidate.instruction.direction_modifier);
+                                mirrorDirectionModifier(candidate.instruction.direction_modifier);
                         }
                         else
                         {
                             if (canBeSuppressed(candidate.instruction.type))
-                                candidate.instruction.type = guidance::TurnType::NewName;
+                                candidate.instruction.type = TurnType::NewName;
                         }
                     }
                     else if (candidate.angle < obvious_with_same_name_angle)
-                        candidate.instruction.direction_modifier =
-                            guidance::DirectionModifier::SlightRight;
+                        candidate.instruction.direction_modifier = DirectionModifier::SlightRight;
                     else
-                        candidate.instruction.direction_modifier =
-                            guidance::DirectionModifier::SlightLeft;
+                        candidate.instruction.direction_modifier = DirectionModifier::SlightLeft;
                 }
-                else if (candidate.instruction.direction_modifier ==
-                             guidance::DirectionModifier::Straight &&
+                else if (candidate.instruction.direction_modifier == DirectionModifier::Straight &&
                          has_obvious_with_same_name)
                 {
                     if (candidate.angle < obvious_with_same_name_angle)
-                        candidate.instruction.direction_modifier =
-                            guidance::DirectionModifier::SlightRight;
+                        candidate.instruction.direction_modifier = DirectionModifier::SlightRight;
                     else
-                        candidate.instruction.direction_modifier =
-                            guidance::DirectionModifier::SlightLeft;
+                        candidate.instruction.direction_modifier = DirectionModifier::SlightLeft;
                 }
             }
         }
@@ -1297,9 +1297,9 @@ EdgeBasedGraphFactory::getTurnCandidates(const NodeID from_node, const EdgeID vi
 
         // unpack first node of second segment if packed
 
-        const auto first_coordinate = guidance::getRepresentativeCoordinate(
+        const auto first_coordinate = getRepresentativeCoordinate(
             from_node, turn_node, via_eid, INVERT, m_compressed_edge_container, m_node_info_list);
-        const auto third_coordinate = guidance::getRepresentativeCoordinate(
+        const auto third_coordinate = getRepresentativeCoordinate(
             turn_node, to_node, onto_edge, !INVERT, m_compressed_edge_container, m_node_info_list);
 
         const auto angle = util::coordinate_calculation::computeAngle(
@@ -1335,8 +1335,8 @@ EdgeBasedGraphFactory::getTurnCandidates(const NodeID from_node, const EdgeID vi
         if (!turn_candidates[valid_turn].valid || turn_candidates[this_turn].valid)
             return false;
 
-        return guidance::angularDeviation(turn_candidates[this_turn].angle,
-                                          turn_candidates[valid_turn].angle) < NARROW_TURN_ANGLE;
+        return angularDeviation(turn_candidates[this_turn].angle,
+                                turn_candidates[valid_turn].angle) < NARROW_TURN_ANGLE;
     };
 
     for (std::size_t index = 0; index < turn_candidates.size(); ++index)
@@ -1372,21 +1372,21 @@ int EdgeBasedGraphFactory::GetTurnPenalty(double angle, lua_State *lua_state) co
 }
 
 // node_u -- (edge_1) --> node_v -- (edge_2) --> node_w
-guidance::TurnInstruction EdgeBasedGraphFactory::AnalyzeTurn(const NodeID node_u,
-                                                             const EdgeID edge1,
-                                                             const NodeID node_v,
-                                                             const EdgeID edge2,
-                                                             const NodeID node_w,
-                                                             const double angle) const
+TurnInstruction EdgeBasedGraphFactory::AnalyzeTurn(const NodeID node_u,
+                                                   const EdgeID edge1,
+                                                   const NodeID node_v,
+                                                   const EdgeID edge2,
+                                                   const NodeID node_w,
+                                                   const double angle) const
 {
 
     const EdgeData &data1 = m_node_based_graph->GetEdgeData(edge1);
     const EdgeData &data2 = m_node_based_graph->GetEdgeData(edge2);
-    bool from_ramp = guidance::isRampClass(data1.road_classification.road_class);
-    bool to_ramp = guidance::isRampClass(data2.road_classification.road_class);
+    bool from_ramp = isRampClass(data1.road_classification.road_class);
+    bool to_ramp = isRampClass(data2.road_classification.road_class);
     if (node_u == node_w)
     {
-        return {guidance::TurnType::Turn, guidance::DirectionModifier::UTurn};
+        return {TurnType::Turn, DirectionModifier::UTurn};
     }
 
     // roundabouts need to be handled explicitely
@@ -1396,9 +1396,9 @@ guidance::TurnInstruction EdgeBasedGraphFactory::AnalyzeTurn(const NodeID node_u
         if (1 == m_node_based_graph->GetDirectedOutDegree(node_v))
         {
             // No turn possible.
-            return guidance::TurnInstruction::NO_TURN();
+            return TurnInstruction::NO_TURN();
         }
-        return guidance::TurnInstruction::REMAIN_ROUNDABOUT(getTurnDirection(angle));
+        return TurnInstruction::REMAIN_ROUNDABOUT(getTurnDirection(angle));
     }
     // Does turn start or end on roundabout?
     if (data1.roundabout || data2.roundabout)
@@ -1406,22 +1406,22 @@ guidance::TurnInstruction EdgeBasedGraphFactory::AnalyzeTurn(const NodeID node_u
         // We are entering the roundabout
         if ((!data1.roundabout) && data2.roundabout)
         {
-            return guidance::TurnInstruction::ENTER_ROUNDABOUT(getTurnDirection(angle));
+            return TurnInstruction::ENTER_ROUNDABOUT(getTurnDirection(angle));
         }
         // We are leaving the roundabout
         if (data1.roundabout && (!data2.roundabout))
         {
-            return guidance::TurnInstruction::EXIT_ROUNDABOUT(getTurnDirection(angle));
+            return TurnInstruction::EXIT_ROUNDABOUT(getTurnDirection(angle));
         }
     }
 
     if (!from_ramp && to_ramp)
     {
-        return {guidance::TurnType::Ramp, guidance::getTurnDirection(angle)};
+        return {TurnType::Ramp, getTurnDirection(angle)};
     }
 
     // assign a designated turn angle instruction purely based on the angle
-    return {guidance::TurnType::Turn, guidance::getTurnDirection(angle)};
+    return {TurnType::Turn, getTurnDirection(angle)};
 }
 
 } // namespace extractor

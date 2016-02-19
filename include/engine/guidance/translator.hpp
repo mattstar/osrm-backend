@@ -3,21 +3,25 @@
 
 #include <string>
 
-#include "guidance/turn_instruction.hpp"
+#include "engine/guidance/turn_instruction.hpp"
 
 namespace osrm
+{
+namespace engine
 {
 namespace guidance
 {
 
 // TODO decide on additional information needed, pass approriate sources
-std::string
-translateLocation(const LocationType type, const DirectionModifier modifier, const std::string &name);
+std::string translateLocation(const LocationType type,
+                              const DirectionModifier modifier,
+                              const std::string &name);
 std::string
 translateRoundabout(const LocationType type, const std::string &name, const int exit_nr);
 std::string translate(const TurnInstruction instruction, const std::string &name);
 
 } // namespace guidance
+} // namespace engine
 } // namespace osrm
 
 #endif // OSRM_GUIDANCE_TRANSLATOR_HPP_

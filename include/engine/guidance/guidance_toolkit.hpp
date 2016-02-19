@@ -7,12 +7,14 @@
 #include "extractor/compressed_edge_container.hpp"
 #include "extractor/query_node.hpp"
 
-#include "guidance/classification_data.hpp"
-#include "guidance/turn_instruction.hpp"
+#include "engine/guidance/classification_data.hpp"
+#include "engine/guidance/turn_instruction.hpp"
 
 #include <map>
 
 namespace osrm
+{
+namespace engine
 {
 namespace guidance
 {
@@ -166,12 +168,14 @@ inline DirectionModifier shiftCW(const DirectionModifier modifier)
 
 inline bool entersRoundabout(const TurnInstruction instruction)
 {
-    return (instruction.type == TurnType::EnterRoundabout || instruction.type == TurnType::EnterRotary);
+    return (instruction.type == TurnType::EnterRoundabout ||
+            instruction.type == TurnType::EnterRotary);
 }
 
 inline bool leavesRoundabout(const TurnInstruction instruction)
 {
-    return (instruction.type == TurnType::ExitRoundabout || instruction.type == TurnType::ExitRotary);
+    return (instruction.type == TurnType::ExitRoundabout ||
+            instruction.type == TurnType::ExitRotary);
 }
 
 inline bool staysOnRoundabout(const TurnInstruction instruction)
@@ -181,7 +185,7 @@ inline bool staysOnRoundabout(const TurnInstruction instruction)
 
 inline bool isOnRoundabout(const TurnInstruction instruction)
 {
-  return staysOnRoundabout(instruction) || leavesRoundabout(instruction);
+    return staysOnRoundabout(instruction) || leavesRoundabout(instruction);
 }
 
 inline bool isTurnNecessary(const TurnInstruction instruction)
@@ -391,19 +395,21 @@ inline DirectionModifier mirrorDirectionModifier(const DirectionModifier modifie
     return results[modifier];
 }
 
-inline bool canBeSuppressed( const TurnType type )
+inline bool canBeSuppressed(const TurnType type)
 {
-  if( type == TurnType::Turn )
-    return true;
-  return false;
+    if (type == TurnType::Turn)
+        return true;
+    return false;
 }
 
-inline bool isLowPriorityRoadClass( const FunctionalRoadClass road_class )
+inline bool isLowPriorityRoadClass(const FunctionalRoadClass road_class)
 {
-  return road_class == FunctionalRoadClass::LOW_PRIORITY_ROAD || road_class == FunctionalRoadClass::SERVICE;
+    return road_class == FunctionalRoadClass::LOW_PRIORITY_ROAD ||
+           road_class == FunctionalRoadClass::SERVICE;
 }
 
 } // namespace guidance
+} // namespace engine
 } // namespace osrm
 
 #endif // OSRM_GUIDANCE_GUIDANCE_TOOLKIT_HPP_

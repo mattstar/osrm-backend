@@ -27,59 +27,14 @@ namespace json
 namespace detail
 {
 
-std::string instructionToString(extractor::TurnInstruction instruction)
+std::string instructionTypeToString(guidance::TurnType type)
 {
-    std::string token;
-    // FIXME this could be an array.
-    switch (instruction)
-    {
-    case extractor::TurnInstruction::Continue:
-        token = "continue";
-        break;
-    case extractor::TurnInstruction::BearRight:
-        token = "bear right";
-        break;
-    case extractor::TurnInstruction::TurnRight:
-        token = "turn right";
-        break;
-    case extractor::TurnInstruction::SharpRight:
-        token = "sharp right";
-        break;
-    case extractor::TurnInstruction::UTurn:
-        token = "uturn";
-        break;
-    case extractor::TurnInstruction::SharpLeft:
-        token = "sharp left";
-        break;
-    case extractor::TurnInstruction::TurnLeft:
-        token = "turn left";
-        break;
-    case extractor::TurnInstruction::BearLeft:
-        token = "bear left";
-        break;
-    case extractor::TurnInstruction::ReachedWaypointLocation:
-        token = "waypoint";
-        break;
-    case extractor::TurnInstruction::EnterRoundAbout:
-        token = "enter roundabout";
-        break;
-    case extractor::TurnInstruction::LeaveRoundAbout:
-        token = "leave roundabout";
-        break;
-    case extractor::TurnInstruction::StayOnRoundAbout:
-        token = "roundabout";
-        break;
-    case extractor::TurnInstruction::Depart:
-        token = "depart";
-        break;
-    case extractor::TurnInstruction::Arrive:
-        token = "arrive";
-        break;
-    default:
-        BOOST_ASSERT("Unsupported instruction reached");
-        break;
-    }
-    return token;
+    return guidance::turn_type_names[static_cast<std::size_t>(type)];
+}
+
+std::string instructionModifierToString(guidance::DirectionModifier modifier)
+{
+    return guidance::modifier_names[static_cast<std::size_t>(modifier)];
 }
 
 util::json::Array coordinateToLonLat(const FixedPointCoordinate &coordinate)
@@ -122,7 +77,9 @@ std::string modeToString(const extractor::TravelMode mode)
 util::json::Object makeStepManeuver(const guidance::StepManeuver &maneuver)
 {
     util::json::Object step_maneuver;
-    step_maneuver.values["type"] = detail::instructionToString(maneuver.instruction);
+    step_maneuver.values["type"] = detail::instructionTypeToString(maneuver.instruction.type);
+    step_maneuver.values["modifier"] =
+        detail::instructionModifierToString(maneuver.instruction.direction_modifier);
     step_maneuver.values["location"] = detail::coordinateToLatLon(maneuver.location);
     step_maneuver.values["heading_before"] = maneuver.heading_before;
     step_maneuver.values["heading_after"] = maneuver.heading_after;
@@ -191,22 +148,20 @@ util::json::Array makeRouteLegs(std::vector<guidance::RouteLeg> &&legs,
         util::json::Array json_steps;
         json_steps.values.reserve(leg.steps.size());
         const auto begin_iter = leg_geometry.locations.begin();
-        std::transform(std::make_move_iterator(leg.steps.begin()),
-                std::make_move_iterator(leg.steps.end()), std::back_inserter(json_steps.values),
-                [&begin_iter](guidance::RouteStep &&step)
-                {
+        std::transform(
+            std::make_move_iterator(leg.steps.begin()), std::make_move_iterator(leg.steps.end()),
+            std::back_inserter(json_steps.values), [&begin_iter](guidance::RouteStep &&step)
+            {
                 // FIXME we only support polyline here
                 auto geometry = boost::make_optional<util::json::Value>(
-                        makePolyline(begin_iter + step.geometry_begin,
-                            begin_iter + step.geometry_end));
+                    makePolyline(begin_iter + step.geometry_begin, begin_iter + step.geometry_end));
                 return makeRouteStep(std::move(step), std::move(geometry));
-                });
+            });
         json_legs.values.push_back(makeRouteLeg(std::move(leg), std::move(json_steps)));
     }
 
     return json_legs;
 }
-
 }
 }
 } // namespace engine

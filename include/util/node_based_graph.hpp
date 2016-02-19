@@ -4,7 +4,7 @@
 #include "util/dynamic_graph.hpp"
 #include "extractor/node_based_edge.hpp"
 #include "util/graph_utils.hpp"
-#include "guidance/classification_data.hpp"
+#include "engine/guidance/classification_data.hpp"
 
 #include <tbb/parallel_sort.h>
 
@@ -46,7 +46,7 @@ struct NodeBasedEdgeData
     bool roundabout : 1;
     bool startpoint : 1;
     extractor::TravelMode travel_mode : 4;
-    guidance::RoadClassificationData road_classification;
+    engine::guidance::RoadClassificationData road_classification;
 
     bool IsCompatibleTo(const NodeBasedEdgeData &other) const
     {

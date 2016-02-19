@@ -7,6 +7,8 @@
 
 namespace osrm
 {
+namespace engine
+{
 namespace guidance
 {
 
@@ -37,9 +39,9 @@ const constexpr char *modifier_names[detail::num_direction_modifiers] = {
 
 enum LocationType
 {
-  Start,
-  Intermediate,
-  Destination
+    Start,
+    Intermediate,
+    Destination
 };
 
 // enum class TurnType : unsigned char
@@ -47,9 +49,10 @@ enum TurnType // at the moment we can support 32 turn types, without increasing 
 {
     Invalid,          // no valid turn instruction
     NoTurn,           // end of segment without turn
-    Suppressed,       // location that suppresses a turn
     Location,         // start,end,via
+    Suppressed,       // location that suppresses a turn
     NewName,          // no turn, but name changes
+    Continue,         // remain on a street
     Turn,             // basic turn
     Merge,            // merge onto a street
     Ramp,             // special turn (highway ramp exits)
@@ -60,10 +63,28 @@ enum TurnType // at the moment we can support 32 turn types, without increasing 
     EnterRotary,      // Enter a rotary
     ExitRotary,       // Exit a rotary
     StayOnRoundabout, // Continue on Either a small or a large Roundabout
-    Continue,         // remain on a street
     Restriction,      // Cross a Barrier, requires barrier penalties instead of full block
-    Notification      // Travel Mode Changes
+    Notification      // Travel Mode Changes`
 };
+
+const constexpr char *turn_type_names[] = {"invalid",
+                                           "no turn",
+                                           "routing location",
+                                           "passing intersection",
+                                           "new name",
+                                           "continue",
+                                           "turn",
+                                           "merge",
+                                           "ramp",
+                                           "fork",
+                                           "end of road",
+                                           "enter roundabout",
+                                           "leave roundabout",
+                                           "enter traffic circle",
+                                           "leave traffic circle",
+                                           "stay on roundabout",
+                                           "restriction",
+                                           "notification"};
 
 // turn angle in 1.40625 degree -> 128 == 180 degree
 typedef uint8_t DiscreteAngle;
@@ -81,32 +102,42 @@ struct TurnInstruction
 
     static TurnInstruction INVALID()
     {
-      return TurnInstruction(TurnType::Invalid,DirectionModifier::UTurn);
+        return TurnInstruction(TurnType::Invalid, DirectionModifier::UTurn);
     }
 
     static TurnInstruction NO_TURN()
     {
-      return TurnInstruction(TurnType::NoTurn,DirectionModifier::Straight);
+        return TurnInstruction(TurnType::NoTurn, DirectionModifier::Straight);
     }
 
     static TurnInstruction REMAIN_ROUNDABOUT(const DirectionModifier modifier)
     {
-      return TurnInstruction(TurnType::StayOnRoundabout,modifier);
+        return TurnInstruction(TurnType::StayOnRoundabout, modifier);
     }
 
     static TurnInstruction ENTER_ROUNDABOUT(const DirectionModifier modifier)
     {
-      return TurnInstruction(TurnType::EnterRoundabout,modifier);
+        return TurnInstruction(TurnType::EnterRoundabout, modifier);
     }
 
     static TurnInstruction EXIT_ROUNDABOUT(const DirectionModifier modifier)
     {
-      return TurnInstruction(TurnType::ExitRoundabout,modifier);
+        return TurnInstruction(TurnType::ExitRoundabout, modifier);
     }
-
 };
 
+inline bool operator!=(const TurnInstruction lhs, const TurnInstruction rhs)
+{
+    return lhs.type != rhs.type || lhs.direction_modifier != rhs.direction_modifier;
+}
+
+inline bool operator==(const TurnInstruction lhs, const TurnInstruction rhs)
+{
+    return lhs.type == rhs.type && lhs.direction_modifier == rhs.direction_modifier;
+}
+
 } // namespace guidance
+} // namespace engine
 } // namespace osrm
 
 #endif // OSRM_GUIDANCE_TURN_INSTRUCTION_HPP_

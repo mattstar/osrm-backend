@@ -1,8 +1,8 @@
 #ifndef OSRM_GUIDANCE_TURN_CLASSIFICATION_HPP_
 #define OSRM_GUIDANCE_TURN_CLASSIFICATION_HPP_
 
-#include "guidance/turn_instruction.hpp"
-#include "guidance/guidance_toolkit.hpp"
+#include "engine/guidance/turn_instruction.hpp"
+#include "engine/guidance/guidance_toolkit.hpp"
 
 #include "util/typedefs.hpp"
 #include "util/coordinate.hpp"
@@ -17,20 +17,19 @@
 
 namespace osrm
 {
+namespace engine
+{
 namespace guidance
 {
 
 struct TurnPossibility
 {
-    TurnPossibility( DiscreteAngle angle, EdgeID edge_id )
-      : angle( std::move(angle) )
-      , edge_id( std::move(edge_id) )
-    {}
+    TurnPossibility(DiscreteAngle angle, EdgeID edge_id)
+        : angle(std::move(angle)), edge_id(std::move(edge_id))
+    {
+    }
 
-    TurnPossibility()
-      : angle(0)
-      , edge_id(SPECIAL_EDGEID)
-    {}
+    TurnPossibility() : angle(0), edge_id(SPECIAL_EDGEID) {}
 
     DiscreteAngle angle;
     EdgeID edge_id;
@@ -45,8 +44,8 @@ classifyIntersection(NodeID nid,
 
     std::vector<TurnPossibility> turns;
 
-    if( graph.BeginEdges(nid) == graph.EndEdges(nid) )
-      return std::vector<TurnPossibility>();
+    if (graph.BeginEdges(nid) == graph.EndEdges(nid))
+        return std::vector<TurnPossibility>();
 
     const EdgeID base_id = graph.BeginEdges(nid);
     const auto base_coordinate = getRepresentativeCoordinate(nid, graph.GetTarget(base_id), base_id,
@@ -58,9 +57,7 @@ classifyIntersection(NodeID nid,
     for (const EdgeID eid : graph.GetAdjacentEdgeRange(nid))
     {
         const auto edge_coordinate = getRepresentativeCoordinate(
-            nid, graph.GetTarget(eid), eid, false, compressed_geometries,
-            query_nodes);
-
+            nid, graph.GetTarget(eid), eid, false, compressed_geometries, query_nodes);
 
         double angle = util::coordinate_calculation::computeAngle(base_coordinate, node_coordinate,
                                                                   edge_coordinate);
@@ -77,7 +74,8 @@ classifyIntersection(NodeID nid,
     for (std::size_t turn_nr = 0; turn_nr + 1 < turns.size(); ++turn_nr)
     {
         turns[turn_nr].angle = (256 + static_cast<uint32_t>(turns[turn_nr + 1].angle) -
-                               static_cast<uint32_t>(turns[turn_nr].angle)) % 256; // calculate the difference to the right
+                                static_cast<uint32_t>(turns[turn_nr].angle)) %
+                               256; // calculate the difference to the right
     }
     turns.pop_back(); // remove sentinel again
 
@@ -100,6 +98,7 @@ classifyIntersection(NodeID nid,
 }
 
 } // namespace guidance
+} // namespace engine
 } // namespace osrm
 
 #endif // OSRM_GUIDANCE_TURN_CLASSIFICATION_HPP_
