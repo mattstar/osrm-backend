@@ -55,15 +55,7 @@ parseArguments(int argc, char *argv[], contractor::ContractorConfig &contractor_
                              ->default_value(false),
         "Use .level file to retain the contaction level for each node from the last run.");
 
-#ifdef DEBUG_GEOMETRY
-    config_options.add_options()(
-        "debug-geometry",
-        boost::program_options::value<std::string>(&contractor_config.debug_geometry_path),
-        "Write out edge-weight debugging geometry data in GeoJSON format to this file");
-#endif
-
-    // hidden options, will be allowed both on command line and in config file, but will not be
-    // shown to the user
+    // hidden options, will be allowed on command line, but will not be shown to the user
     boost::program_options::options_description hidden_options("Hidden options");
     hidden_options.add_options()("input,i", boost::program_options::value<boost::filesystem::path>(
                                                 &contractor_config.osrm_input_path),
