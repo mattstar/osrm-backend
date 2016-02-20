@@ -1,5 +1,4 @@
 #include "util/coordinate_calculation.hpp"
-#include "util/rectangle.hpp"
 
 #include "util/mercator.hpp"
 #include "util/string_util.hpp"
