@@ -474,9 +474,6 @@ void EdgeBasedGraphFactory::GenerateEdgeExpandedEdges(
                     distance += speed_profile.u_turn_penalty;
                 }
 
-                util::DEBUG_TURN(node_v, m_node_info_list, first_coordinate, turn_angle,
-                                 turn_penalty);
-
                 distance += turn_penalty;
 
                 const bool edge_is_compressed = m_compressed_edge_container.HasEntryForID(e1);

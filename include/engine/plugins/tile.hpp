@@ -3,7 +3,6 @@
 
 #include "engine/plugins/plugin_base.hpp"
 #include "osrm/json_container.hpp"
-#include "util/tile_bbox.hpp"
 
 #include <protozero/varint.hpp>
 #include <protozero/pbf_writer.hpp>
